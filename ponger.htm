@@ -1,0 +1,110 @@
+<html>
+
+<head>
+    <script>
+        function sorted(ray) {
+            if (ray.length <= 1) {
+                return ray
+            }
+            else {
+
+                let pivot = ray[0]
+
+                let smaller = []
+                let bigger = []
+
+                for (let i = 1; i < ray.length; i++) {
+                    if (ray[i] < pivot) {
+                        smaller.push(ray[i])
+                    }
+                    else {
+                        bigger.push(ray[i])
+                    }
+                }
+                return [...sorted(smaller), pivot, ...sorted(bigger)]
+                // return sorted(smaller).concat([pivot]).concat(sorted(bigger))
+            }
+        }
+
+        function doSort() {
+            const initTime = Date.now()
+            // debugger
+            let ray = document.getElementById("inp").innerHTML.split(" ")
+
+            console.log(ray)
+            ray = ray.map((e) => isNaN(parseInt(e.trim())) ? undefined : parseInt(e.trim()))
+            console.log(ray)
+
+            document.getElementById("out").innerText = sorted(ray)
+
+            document.getElementById("speed").innerText = Date.now() - initTime
+
+
+        }
+    </script>
+</head>
+
+<body>
+    <div id="score" style="position:fixed;top:20px;left:200px;font-size: 24px;">0</div>
+
+    <div style="height: 400px; width: 600px;border: 1px solid black;">
+        <div id="paddle" style="width:20px;height:100px;background: black;position:absolute;top:200px"> </div>
+        <div id="ball" style="border-radius: 20px;width:20px;height:20px;background: red;position:absolute;top:200px; left:200px"> </div>
+    </div>
+    <p id="demo"></p>
+
+
+    <script>
+        window.onmousemove = function (event) { myFunction(event) };
+
+        let score = 0
+
+        let bounds = [600,400]
+        let x 
+        let y 
+
+        function myFunction(e) {
+             x = e.clientX;
+             y = e.clientY;
+            let coor = "Coordinates: (" + x + "," + y + ")";
+            document.getElementById("demo").innerHTML = coor;
+            document.getElementById("paddle").style.top = y - 50 + "px"
+        }
+
+        
+        let ball = {}
+        ball.v = [10, 4]
+        ball.x = 200
+        ball.y = 200
+        function nextTick() {
+            ball.x += ball.v[0]
+            ball.y += ball.v[1]
+
+            if(ball.x<0) {
+                score-=1
+                document.getElementById("score").innerHTML = score
+            }
+
+            if(ball.x<0||ball.x>bounds[0])
+                ball.v[0]*=-1
+            if(ball.y<0||ball.y>bounds[1])
+                ball.v[1]*=-1
+
+            
+            if(ball.x<25 && ball.y>y-50 && ball.y<y+50) {
+                ball.v[0]*=-1
+                console.log("pong")
+
+                score+=1
+                document.getElementById("score").innerHTML = score
+            }
+
+            document.getElementById("ball").style.left = ball.x + "px"
+            document.getElementById("ball").style.top = ball.y + "px"
+
+        }
+        setInterval(nextTick, 32)
+    </script>
+</body>
+
+</html>

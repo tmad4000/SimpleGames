@@ -1,0 +1,349 @@
+<html>
+
+<head>
+    <style>
+        .platform {
+            background-color: black;
+            position: absolute;
+            height: 30px;
+        }
+
+        #connector {
+            position: absolute;
+            background-color: #3498db;
+            /* Change this to the desired color */
+            transform-origin: top center;
+            width: 3px;
+        }
+    </style>
+    <script>
+        function sorted(ray) {
+            if (ray.length <= 1) {
+                return ray
+            }
+            else {
+
+                let pivot = ray[0]
+
+                let smaller = []
+                let bigger = []
+
+                for (let i = 1; i < ray.length; i++) {
+                    if (ray[i] < pivot) {
+                        smaller.push(ray[i])
+                    }
+                    else {
+                        bigger.push(ray[i])
+                    }
+                }
+                return [...sorted(smaller), pivot, ...sorted(bigger)]
+                // return sorted(smaller).concat([pivot]).concat(sorted(bigger))
+            }
+        }
+
+        function doSort() {
+            const initTime = Date.now()
+            // debugger
+            let ray = document.getElementById("inp").innerHTML.split(" ")
+
+            console.log(ray)
+            ray = ray.map((e) => isNaN(parseInt(e.trim())) ? undefined : parseInt(e.trim()))
+            console.log(ray)
+
+            document.getElementById("out").innerText = sorted(ray)
+
+            document.getElementById("speed").innerText = Date.now() - initTime
+
+
+        }
+    </script>
+</head>
+
+<body>
+    <div id="score" style="position:fixed;top:20px;left:200px;font-size: 24px;">0</div>
+    <div id="dist" style="position:fixed;top:20px;left:300px;font-size: 24px;">0</div>
+
+    <div id="field" style="height: 400px; width: 600px;border: 1px solid black;">
+        <div id="guy"
+            style="border-radius: 3px;width:20px;height:20px;background: purple;position:absolute;top:200px; left:200px">
+        </div>
+
+        <div id="paddle" style="width:20px;height:100px;background: black;position:absolute;top:200px"> </div>
+        <div id="ball"
+            style="border-radius: 20px;width:20px;height:20px;background: red;position:absolute;top:200px; left:200px">
+        </div>
+
+        <div id="connector"></div>
+
+        <!-- <div id="web" style="width:4px;height:100px;background: green;position:absolute;top:200px; rotate: ;"> </div> -->
+
+    </div>
+    <p id="demo"></p>
+
+    <script>
+
+        /* Calculate distance and angle between two points */
+        function calculateDistanceAndAngle(x1, y1, x2, y2) {
+            const dx = x2 - x1;
+            const dy = y2 - y1;
+            const distance = Math.sqrt(dx * dx + dy * dy);
+            const angle = Math.atan2(dy, dx);
+            return { distance, angle };
+        }
+
+
+        // Object to track the state of arrow keys
+        const arrowKeys = {
+            ArrowUp: false,
+            ArrowDown: false,
+            ArrowLeft: false,
+            ArrowRight: false
+        };
+
+        // Event listener for keydown event
+        document.addEventListener("keydown", event => {
+            if (event.key in arrowKeys) {
+                arrowKeys[event.key] = true;
+                console.log(`${event.key} key down`);
+                event.preventDefault(); // Prevent default scrolling behavior for arrow keys
+            }
+        });
+
+        // Event listener for keyup event
+        document.addEventListener("keyup", event => {
+            if (event.key in arrowKeys) {
+                arrowKeys[event.key] = false;
+                console.log(`${event.key} key up`);
+                event.preventDefault(); // Prevent default scrolling behavior for arrow keys
+            }
+        });
+
+        // Check arrow keys state periodically
+        function checkArrowKeys() {
+            if (arrowKeys.ArrowUp) {
+                console.log("ArrowUp is pressed");
+            }
+            if (arrowKeys.ArrowDown) {
+                console.log("ArrowDown is pressed");
+            }
+            if (arrowKeys.ArrowLeft) {
+                console.log("ArrowLeft is pressed");
+            }
+            if (arrowKeys.ArrowRight) {
+                console.log("ArrowRight is pressed");
+            }
+
+            requestAnimationFrame(checkArrowKeys); // Continuously check the keys
+        }
+
+        checkArrowKeys(); // Start checking arrow keys
+
+
+
+    </script>
+    <script>
+        window.onmousemove = function (event) { myFunction(event) };
+
+
+        //init
+
+        const field = document.getElementById("field");
+
+        let rowHeight = 100
+        let platforms = [[0, 30], [50, 100], [150, 300], [350, 500]]
+
+        platforms.map((range) => {
+            let plat = document.createElement("div")
+            plat.className = "platform"
+            // plat.style.position="absolute"
+            plat.style.width = range[1] - range[0]
+            plat.style.left = range[0]
+            plat.style.top = rowHeight
+
+
+            // add the newly created element and its content into the DOM
+            document.body.insertBefore(plat, field);
+        })
+
+
+        function intersectsAPlat(obj, platY, range) {
+            if (obj.x + obj.width > range[0] && obj.x < range[1] && Math.abs(platY - (obj.y + obj.height - 5)) < 10)
+                return true
+            else
+                return false
+        }
+        function intersectsAnyPlat(obj, plats) {
+            return plats.map((plat) => intersectsAPlat(obj, rowHeight, plat)).includes(true)
+        }
+
+
+        let guy = {}
+        // guy.v = [10, 4]
+        guy.x = 20
+        guy.y = 20
+        guy.height = 20
+        guy.width = 20
+        guy.v = [0, 0] //for falling etc
+
+        const guyDiv = document.getElementById("guy");
+
+
+
+
+
+
+
+        let score = 0
+
+        let bounds = [600, 400]
+        let x
+        let y
+
+        let isMouseDown = false;
+
+        let distance, angle 
+        let webDistance=null
+
+        function myFunction(e) {
+            x = e.clientX;
+            y = e.clientY;
+            let coor = "Coordinates: (" + x + "," + y + ")";
+            document.getElementById("demo").innerHTML = coor;
+            document.getElementById("paddle").style.top = y - 50 + "px"
+        }
+
+        window.addEventListener("mousedown", event => {
+            console.log("Mouse button down at:", event.clientX, event.clientY);
+            // You can perform any action you want when the mouse button is pressed down
+            isMouseDown = true
+        });
+
+        window.addEventListener("mouseup", event => {
+            console.log("Mouse button up at:", event.clientX, event.clientY);
+            // You can perform any action you want when the mouse button is released
+            isMouseDown = false
+        });
+
+
+        function render() {
+
+            guyDiv.style.left = guy.x
+            guyDiv.style.top = guy.y
+
+            if (isMouseDown) {
+               
+                
+
+                const connector = document.querySelector("#connector");
+                // document.querySelector("#dist").innerText=Math.round(distance,3)+", "+angle*180/Math.PI;
+
+                connector.style.display = "block"
+
+                // connector.style.width = "2px"; // Adjust the width as needed
+                connector.style.height = `${distance}px`;
+                connector.style.left = `${guy.x}px`;
+                connector.style.top = `${guy.y}px`;
+                connector.style.transform = `rotate(${angle}rad)`;
+
+
+            }
+            else {
+                connector.style.display = "none"
+
+            }
+
+
+        }
+
+
+        let ball = {}
+        ball.v = [10, 4]
+        ball.x = 200
+        ball.y = 200
+        function nextTick() {
+
+            if (arrowKeys.ArrowRight)
+                guy.x += 5
+            if (arrowKeys.ArrowLeft)
+                guy.x -= 5
+
+
+
+            if (intersectsAnyPlat(guy, platforms)) {
+                console.log("hit")
+
+                guy.v[1] = 0
+
+                if (arrowKeys.ArrowUp) {
+                    // guy.y -= 50 //jumping linear
+                    guy.v[1] = -7 //jumping nonlinear
+                }
+
+
+            }
+            else {
+                // guy.y += 5 //falling linear
+                guy.v[1] += .8
+            }
+
+
+            if (isMouseDown) {
+                const dAndA = calculateDistanceAndAngle(guy.x, guy.y, x, y);
+                distance = dAndA.distance
+                angle=dAndA.angle
+
+                if(webDistance===null)
+                    webDistance=distance
+
+                angle-=Math.PI/2
+                angle+=2*Math.PI 
+                angle%=2*Math.PI
+
+                let webForce=2*(distance-webDistance)
+                document.querySelector("#dist").innerText=Math.round(webForce,3)+", "+Math.round(distance,3)+", "+angle*180/Math.PI;
+
+                guy.v[0]-=webForce*Math.sin(angle)
+                guy.v[1]+=webForce*Math.cos(angle)
+            }
+            else {
+                webDistance=null
+            }
+
+
+
+            guy.x += guy.v[0] 
+            guy.y += guy.v[1] //falling nonlinear
+            render()
+
+
+            ball.x += ball.v[0]
+            ball.y += ball.v[1]
+
+            if (ball.x < 0) {
+                score -= 1
+                document.getElementById("score").innerHTML = score
+            }
+
+            if (ball.x < 0 || ball.x > bounds[0])
+                ball.v[0] *= -1
+            if (ball.y < 0 || ball.y > bounds[1])
+                ball.v[1] *= -1
+
+
+            if (ball.x < 25 && ball.y > y - 50 && ball.y < y + 50) {
+                ball.v[0] *= -1
+                console.log("pong")
+
+                score += 1
+                document.getElementById("score").innerHTML = score
+            }
+
+            document.getElementById("ball").style.left = ball.x + "px"
+            document.getElementById("ball").style.top = ball.y + "px"
+
+        }
+        setInterval(nextTick, 32)
+    </script>
+</body>
+
+</html>
